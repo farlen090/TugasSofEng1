@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Manajemen Tugas Kuliah</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen py-10 px-4">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-gray-800">📋 Sistem Pengatur Deadline</h1>
+            <p class="text-gray-600 mt-2">Aplikasi Manajemen Tugas Kuliah dengan Validasi & Prioritas Otomatis</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1 bg-white p-6 rounded-lg shadow-md h-fit">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Tambah Tugas Baru</h2>
+                
+                <div id="errorAlert" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4 text-sm">
+                    <span id="errorMessage">Semua kolom wajib diisi</span>
+                </div>
+
+                <form id="taskForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Nama Tugas</label>
+                        <input type="text" id="taskTitle" placeholder="Contoh: Makalah Etika Profesi" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Mata Kuliah</label>
+                        <input type="text" id="taskCourse" placeholder="Contoh: Software Engineering" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-600 mb-1">Tanggal Deadline</label>
+                        <input type="date" id="taskDeadline" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition duration-200">
+                        Simpan Tugas
+                    </button>
+                </form>
+            </div>
+
+            <div class="md:col-span-2 bg-white p-6 rounded-lg shadow-md">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Daftar Tugas Aktif</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-200 text-gray-600 text-sm font-medium uppercase">
+                                <th class="py-3 px-4">Tugas / Mata Kuliah</th>
+                                <th class="py-3 px-4">Deadline</th>
+                                <th class="py-3 px-4">Sisa Hari</th>
+                                <th class="py-3 px-4 text-center">Prioritas</th>
+                            </tr>
+                        </thead>
+                        <tbody id="taskList" class="divide-y divide-gray-100 text-sm text-gray-700">
+                            <tr id="emptyRow">
+                                <td colspan="4" class="py-8 text-center text-gray-400 italic">Belum ada tugas yang disimpan. Silakan tambah tugas baru!</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Copy fungsi logika yang sudah lolos uji Jest kemarin ke sini agar browser paham
+        function validateTaskInput(title, course, deadline) {
+            if (!title || !title.trim() || !course || !course.trim() || !deadline) {
+                return { isValid: false, errorMessage: 'Semua kolom wajib diisi' };
+            }
+            return { isValid: true, errorMessage: '' };
+        }
+
+        function calculatePriority(deadlineDateStr) {
+            const today = new Date();
+            const deadline = new Date(deadlineDateStr);
+            today.setHours(0, 0, 0, 0);
+            deadline.setHours(0, 0, 0, 0);
+
+            const differenceInTime = deadline.getTime() - today.getTime();
+            const daysLeft = Math.ceil(differenceInTime / (1000 * 3600 * 24));
+
+            let priority = 'Rendah';
+            let colorClass = 'bg-green-500';
+
+            if (daysLeft <= 1) {
+                priority = 'Tinggi';
+                colorClass = 'bg-red-500';
+            } else if (daysLeft >= 2 && daysLeft <= 3) {
+                priority = 'Normal';
+                colorClass = 'bg-yellow-500';
+            }
+
+            return { daysLeft, priority, colorClass };
+        }
+
+        // DOM Manipulation (Interaksi tombol dan form)
+        const form = document.getElementById('taskForm');
+        const taskList = document.getElementById('taskList');
+        const emptyRow = document.getElementById('emptyRow');
+        const errorAlert = document.getElementById('errorAlert');
+        const errorMessage = document.getElementById('errorMessage');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Mencegah reload halaman saat submit
+
+            // Ambil value dari input form
+            const title = document.getElementById('taskTitle').value;
+            const course = document.getElementById('taskCourse').value;
+            const deadline = document.getElementById('taskDeadline').value;
+
+            // 1. Jalankan Fungsi Validasi (Hasil TDD Cycle 1)
+            const validationResult = validateTaskInput(title, course, deadline);
+            
+            if (!validationResult.isValid) {
+                errorMessage.textContent = validationResult.errorMessage;
+                errorAlert.classList.remove('hidden');
+                return; // Stop proses jika tidak valid
+            }
+
+            // Sembunyikan alert jika validasi lolos
+            errorAlert.classList.add('hidden');
+
+            // 2. Jalankan Fungsi Kalkulasi Sisa Hari & Prioritas (Hasil TDD Cycle 2)
+            const analysis = calculatePriority(deadline);
+
+            // Sembunyikan baris "Belum ada tugas" jika ini tugas pertama
+            if (emptyRow) {
+                emptyRow.style.display = 'none';
+            }
+
+            // 3. Render data baru ke dalam tabel HTML
+            const newRow = document.createElement('tr');
+            newRow.className = 'hover:bg-gray-50 transition duration-150';
+            newRow.innerHTML = `
+                <td class="py-4 px-4">
+                    <div class="font-semibold text-gray-800">${title.trim()}</div>
+                    <div class="text-xs text-gray-400">${course.trim()}</div>
+                </td>
+                <td class="py-4 px-4 text-gray-600">${deadline}</td>
+                <td class="py-4 px-4 font-medium ${analysis.daysLeft <= 1 ? 'text-red-600 font-bold' : 'text-gray-600'}">
+                    ${analysis.daysLeft < 0 ? 'Lewat deadline' : analysis.daysLeft + ' Hari'}
+                </td>
+                <td class="py-4 px-4 text-center">
+                    <span class="inline-block px-3 py-1 text-xs font-semibold text-white rounded-full ${analysis.colorClass}">
+                        ${analysis.priority}
+                    </span>
+                </td>
+            `;
+
+            taskList.appendChild(newRow);
+
+            // Reset form input setelah sukses menyimpan
+            form.reset();
+        });
+    </script>
+</body>
+</html>
