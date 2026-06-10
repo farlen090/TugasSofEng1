@@ -1,0 +1,26 @@
+{
+  "name": "tugassofeng_1",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/farlen090/TugasSofEng1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/farlen090/TugasSofEng1/issues"
+  },
+  "homepage": "https://github.com/farlen090/TugasSofEng1#readme",
+  "devDependencies": {
+    "jest": "^30.4.2"
+  }
+}
